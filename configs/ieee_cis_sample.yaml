@@ -1,7 +1,5 @@
 # ============================================================
-# IEEE-CIS — chạy mẫu 10% (KHÔNG phải kết quả paper)
-# [PAPER]    = paper nêu rõ  | [INFERRED] = paper không nêu, chọn tối ưu cho model
-# [DEVIATION]= cap kỹ thuật/khác paper (được ghi vào kết quả `deviations_from_paper`)
+# IEEE-CIS — Chạy thử sample 10% (KHÔNG phải paper)
 # ============================================================
 seed: 42
 flags:
@@ -9,8 +7,8 @@ flags:
   rl: true
   federated: true
   hard_edges: true
-  soft_edges: false
-  pruning: false
+  soft_edges: false    # Tắt soft edges (paper không dùng)
+  pruning: false       # Tắt pruning (paper không dùng)
 experiment:
   name: ieee_cis_sample
   dataset: ieee
@@ -20,33 +18,33 @@ runtime:
 output:
   dir: outputs
 graph:
-  time_window_hours: 1.0
-  similarity_threshold: 0.9
-  max_neighbors_per_node: 32
+  time_window_hours: 1.0        # [PAPER]
+  similarity_threshold: 0.9     # [PAPER]
+  max_neighbors_per_node: 32    # [DEVIATION] Cap kỹ thuật
   device: null
   chunk_elems: 20000000.0
 model:
-  hidden_dim: 64
-  num_layers: 3
+  hidden_dim: 64                # [PAPER]
+  num_layers: 3                 # [PAPER]
   dropout: 0.2
   shared_projection: true
-  temporal_max_seq_len: 32
+  temporal_max_seq_len: 32      # [DEVIATION] Cap kỹ thuật
 train:
-  epochs: 5
+  epochs: 50                    # Chạy thử 10 epoch
   patience: 3
-  batch_size: 64
-  learning_rate: 0.001
+  batch_size: 64                # [PAPER]
+  learning_rate: 0.001          # [PAPER]
   weight_decay: 0.0
-  pos_weight_max: 100.0
+  pos_weight_max: 500.0        # [INFERRED] Tăng để học class thiểu số
   batch_mode: subgraph
   subgraph_nodes: 5000
   grad_steps_per_epoch: 1
   eval_chunk_nodes: 200000
 rl:
-  type: naf
-  hidden_dim: 128
-  learning_rate: 0.001
-  epochs: 5
+  type: naf                     # [PAPER]
+  hidden_dim: 128               # [PAPER]
+  learning_rate: 0.001          # [PAPER]
+  epochs: 200                    # Chạy thử 50 epoch RL
   env_batch_size: 1024
   update_batch_size: 64
   gamma: 0.99
@@ -54,36 +52,25 @@ rl:
   buffer_size: 10000
   fpr_penalty: 1.0
   recall_weight: 0.25
-  inference: mean
+  inference: grid               # [INFERRED] Tối ưu threshold
   n_threshold_bins: 19
 federated:
-  num_clients: 3
-  rounds: 5
+  num_clients: 3                # [INFERRED] 3 clients
+  rounds: 20                    # Chạy thử 20 rounds
   local_epochs: 1
   client_fraction: 1.0
   learning_rate: 0.001
   patience: 3
 soft_graph:
-  enabled: true
-  similarity_threshold: 0.85
-  max_neighbors_per_node: 5
-  time_window_hours: 1.0
-  causal: true
-  feature_indices: null
-pruning:
-  start_epoch: 5
-  end_epoch: 25
-  initial_amount: 0.1
-  final_amount: 0.3
+  enabled: false                # Tắt (paper không dùng)
+# XÓA HOÀN TOÀN MỤC PRUNING
 dataset:
   name: IEEE-CIS
-  transaction_path: data/raw/train_transaction.csv
-  identity_path: data/raw/train_identity.csv
-  key_col: TransactionID
+  path: data/raw/ieee_cis_fast.csv   # Sửa lại đường dẫn file _fast
   label_col: isFraud
   time_col: TransactionDT
   time_unit: second
-  sample_frac: 0.1
+  sample_frac: 0.5                   # Lấy 50% data
   random_state: 42
   entity_type_col: ProductCD
   entity_type_values:
