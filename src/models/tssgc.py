@@ -100,7 +100,7 @@ class SemanticEncoder(nn.Module):
 
 
 class TSSGCLayer(nn.Module):
-    def __init__(self, in_dim, out_dim, num_node_types=1, dropout=0.2, max_seq_len=None):
+    def __init__(self, in_dim, out_dim, num_node_types=1, dropout=0.0, max_seq_len=None):
         super().__init__()
         self.temporal = TemporalAggregator(in_dim, out_dim, max_seq_len)
         self.spatial = GATConv(in_dim, out_dim, heads=1, concat=False, dropout=dropout, add_self_loops=False)
@@ -122,7 +122,7 @@ class TSSGCLayer(nn.Module):
 class TSSGCEncoder(nn.Module):
     """3 lớp TSSGC, hidden 64 (paper V-A-4)."""
 
-    def __init__(self, in_dim, hidden_dim=64, num_layers=3, num_node_types=1, dropout=0.2, max_seq_len=None):
+    def __init__(self, in_dim, hidden_dim=64, num_layers=3, num_node_types=1, dropout=0.0, max_seq_len=None):
         super().__init__()
         self.layers = nn.ModuleList([
             TSSGCLayer(in_dim if i == 0 else hidden_dim, hidden_dim, num_node_types, dropout, max_seq_len)
@@ -138,7 +138,7 @@ class TSSGCEncoder(nn.Module):
 class MLPEncoder(nn.Module):
     """Encoder "standard deep neural network" cho ablation 'w/o GNN' (cùng độ sâu/độ rộng, không dùng cạnh)."""
 
-    def __init__(self, in_dim, hidden_dim=64, num_layers=3, dropout=0.2):
+    def __init__(self, in_dim, hidden_dim=64, num_layers=3, dropout=0.0):
         super().__init__()
         blocks = []
         for i in range(num_layers):

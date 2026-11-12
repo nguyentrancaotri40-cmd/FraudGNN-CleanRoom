@@ -6,9 +6,6 @@ flags:
   gnn: true
   rl: true
   federated: true
-  hard_edges: true
-  soft_edges: false    # Tắt soft edges (paper không dùng)
-  pruning: false       # Tắt pruning (paper không dùng)
 experiment:
   name: ieee_cis_sample
   dataset: ieee
@@ -61,9 +58,7 @@ federated:
   client_fraction: 1.0
   learning_rate: 0.001
   patience: 3
-soft_graph:
   enabled: false                # Tắt (paper không dùng)
-# XÓA HOÀN TOÀN MỤC PRUNING
 dataset:
   name: IEEE-CIS
   path: data/raw/ieee_cis_fast.csv   # Sửa lại đường dẫn file _fast

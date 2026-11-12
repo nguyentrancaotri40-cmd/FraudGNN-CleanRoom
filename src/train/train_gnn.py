@@ -82,19 +82,11 @@ def train_tssgc_classifier(train_data, val_data, cfg: Dict[str, Any], device: st
     epochs, patience = int(t.get("epochs", 100)), int(t.get("patience", 10))
     eval_chunk = t.get("eval_chunk_nodes")
 
-    prune_cfg = cfg.get("pruning", {})
-    if flags["pruning"]:
-        from src.extensions.pruning import amount_schedule, magnitude_prune_
 
     best_state, best, bad, hist = None, -1.0, 0, []
     t0 = time.perf_counter()
     for epoch in range(1, epochs + 1):
         loss = train_steps(model, train_data, opt, pos_w, t, device, epochs=1)
-        if flags["pruning"]:
-            magnitude_prune_(model, amount_schedule(epoch, int(prune_cfg.get("start_epoch", 5)),
-                                                    int(prune_cfg.get("end_epoch", 25)),
-                                                    float(prune_cfg.get("initial_amount", 0.1)),
-                                                    float(prune_cfg.get("final_amount", 0.3))))
         s, y = predict_scores(model, val_data, device, chunk_nodes=eval_chunk)
         m = classification_metrics(y, s, 0.5)
         hist.append({"epoch": epoch, "train_loss": loss, "val_auc_pr": m["auc_pr"], "val_auc_roc": m["auc_roc"]})

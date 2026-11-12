@@ -88,10 +88,6 @@ def train_federated(train_data, val_data, cfg: Dict[str, Any], device: str, timi
     worker = copy.deepcopy(global_model)               # model dùng chung cho LocalUpdate (tuần tự)
     clients = create_federated_clients(train_data, cfg, int(fl.get("num_clients", 3)), device)
 
-    if flags["pruning"]:
-        from src.extensions.pruning import amount_schedule, magnitude_prune_
-        pc = cfg.get("pruning", {})
-
     best_state, best, bad, hist, round_times = None, -1.0, 0, [], []
     g_state = copy.deepcopy(global_model.state_dict())
     t_start = time.perf_counter()
@@ -102,10 +98,7 @@ def train_federated(train_data, val_data, cfg: Dict[str, Any], device: str, timi
         states = [c.local_update(g_state, worker, local_epochs, lr) for c in chosen]
         g_state = fedavg_uniform(states)
         global_model.load_state_dict(g_state)
-        if flags["pruning"]:
-            magnitude_prune_(global_model, amount_schedule(r, int(pc.get("start_epoch", 5)), int(pc.get("end_epoch", 25)),
-                                                           float(pc.get("initial_amount", 0.1)), float(pc.get("final_amount", 0.3))))
-            g_state = copy.deepcopy(global_model.state_dict())
+        g_state = copy.deepcopy(global_model.state_dict())
         s, y = predict_scores(global_model, val_data, device, chunk_nodes=eval_chunk)
         m = classification_metrics(y, s, 0.5)
         round_times.append(time.perf_counter() - rt0)
@@ -127,6 +120,5 @@ def train_federated(train_data, val_data, cfg: Dict[str, Any], device: str, timi
     return {"model": global_model, "history": hist, "best_val_auc_pr": best, "total_time_sec": total,
             "avg_round_time_sec": float(np.mean(round_times)) if round_times else 0.0,
             "num_clients": len(clients), "num_rounds": len(hist)}
-
 
 __all__ = ["fedavg_uniform", "FederatedClient", "create_federated_clients", "train_federated"]

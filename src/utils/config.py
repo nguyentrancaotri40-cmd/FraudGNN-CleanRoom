@@ -12,10 +12,6 @@ DEFAULT_FLAGS: Dict[str, bool] = {
     "gnn": True,
     "rl": True,
     "federated": True,
-    # --- Mở rộng NGOÀI paper (OFF = bản reproduction 100% paper) ---
-    "hard_edges": True,
-    "soft_edges": False,
-    "pruning": False,
 }
 
 

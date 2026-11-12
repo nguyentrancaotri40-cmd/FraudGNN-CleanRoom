@@ -8,11 +8,8 @@ flags:
   gnn: true
   rl: true
   federated: true
-  hard_edges: true
-  soft_edges: false
-  pruning: false
 experiment:
-  name: paysim_paper_repro
+  name: paysim
   dataset: paysim
   pipeline: fraudgnn_rl
 runtime:
@@ -63,14 +60,12 @@ federated:
   client_fraction: 1.0
   learning_rate: 0.001
   patience: 10
-soft_graph:
   enabled: true
   similarity_threshold: 0.85
   max_neighbors_per_node: 5
   time_window_hours: 1.0
   causal: true
   feature_indices: null
-pruning:
   start_epoch: 5
   end_epoch: 25
   initial_amount: 0.1

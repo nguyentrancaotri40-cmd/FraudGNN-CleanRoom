@@ -9,7 +9,6 @@
 #   giữa train/val/test (bản cũ dùng cat.codes theo từng split nên lệch mã).
 #
 # flags: gnn=False -> Data không cạnh (dùng cho "w/o GNN");
-#        soft_edges=True -> thêm soft edges (extension, NGOÀI paper).
 # ============================================================
 from __future__ import annotations
 
@@ -61,15 +60,10 @@ def build_transaction_graph(
     delta = torch.empty(0)
 
     if flags["gnn"]:
-        if flags["hard_edges"]:
             print(f"[GRAPH] Hard edges: N={n}, d={x.shape[1]}, cos>={thr}, window={win if hours is not None else 'n/a'}h, cap={cap}")
             ei, dl, _ = cosine_neighbors(x, hours, thr, win, cap, causal=False, device=dev,
                                          chunk_elems=float(g.get("chunk_elems", 2e7)))
             edge_index, delta = make_undirected(ei, dl, n)
-        if flags["soft_edges"]:  # EXTENSION — ngoài paper
-            from src.extensions.soft_behavior_graph import build_soft_behavior_edges, merge_hard_soft_edges
-            s_ei, s_dl, s_w = build_soft_behavior_edges(x, hours, cfg, device=dev)
-            edge_index, delta = merge_hard_soft_edges(edge_index, delta, s_ei, s_dl, n)
 
     node_type = (torch.tensor(entity_type, dtype=torch.long) if entity_type is not None
                  else torch.zeros(n, dtype=torch.long))

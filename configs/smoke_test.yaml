@@ -6,9 +6,6 @@ flags:
   gnn: true
   rl: true
   federated: true
-  hard_edges: true
-  soft_edges: false
-  pruning: false
 experiment:
   name: smoke_test_baseline
   dataset: paysim
@@ -61,7 +58,6 @@ federated:
   client_fraction: 1.0
   learning_rate: 0.001
   patience: 3
-soft_graph:
   enabled: false
 dataset:
   name: PaySim

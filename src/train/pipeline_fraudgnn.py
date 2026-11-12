@@ -9,7 +9,6 @@
 #   - RL Action Selection : NAF/DQN huấn luyện trên VAL (state = embedding, action = threshold + feature weights)
 #   - Classification      : áp (threshold, feature weights) lên TEST — KHÔNG feedback online (future work của paper)
 #
-# Flags (ablation của paper): gnn / rl / federated. Extension (ngoài paper): soft_edges / pruning.
 # ============================================================
 from __future__ import annotations
 
@@ -31,7 +30,7 @@ from src.train.federated import train_federated
 from src.train.train_gnn import train_tssgc_classifier
 from src.train.train_rl import apply_policy, train_rl_on_validation
 from src.utils.config import get_flags
-from src.utils.model_definitions import resolve_model_name
+# from src.utils.model_definitions import resolve_model_name  # Đã xóa
 from src.utils.seed import set_seed
 
 
@@ -68,7 +67,8 @@ def run_pipeline_on_split(train_df, val_df, test_df, cfg: Dict[str, Any], prepar
     seed = int(seed if seed is not None else cfg.get("seed", cfg.get("dataset", {}).get("random_state", 42)))
     set_seed(seed)
     flags, device = get_flags(cfg), get_device(cfg)
-    print("=" * 60 + f"\n[PIPE] {resolve_model_name(flags)} | flags={flags} | device={device} | seed={seed}\n" + "=" * 60)
+    # Đã thay thế resolve_model_name(flags) bằng chuỗi cố định
+    print("=" * 60 + f"\n[PIPE] FraudGNN-RL | flags={flags} | device={device} | seed={seed}\n" + "=" * 60)
     t_all = time.perf_counter()
     prep = prepared or prepare_splits(train_df, val_df, test_df, cfg)
     g_tr, g_va, g_te = prep["graphs"]
@@ -121,9 +121,6 @@ def run_pipeline_on_split(train_df, val_df, test_df, cfg: Dict[str, Any], prepar
     timing["total_runtime_sec"] = time.perf_counter() - t_all
 
     extra = {}
-    if flags["pruning"]:
-        from src.extensions.pruning import get_pruning_stats
-        extra["pruning"] = get_pruning_stats(model)
     deviations = []
     g = cfg.get("graph", {})
     if g.get("max_neighbors_per_node") is not None:
@@ -136,7 +133,7 @@ def run_pipeline_on_split(train_df, val_df, test_df, cfg: Dict[str, Any], prepar
     print(f"\n[PIPE] TEST AUC-ROC={test_m['auc_roc']:.4f} AUC-PR={test_m['auc_pr']:.4f} F1={test_m['f1']:.4f} "
           f"Recall@1%={test_m['recall_at_1pct']*100:.1f}% FPR={test_m['fpr']:.5f} | total {timing['total_runtime_sec']:.0f}s")
     result = {
-        "model_name": resolve_model_name(flags), "flags": flags, "seed": seed,
+        "model_name": "FraudGNN-RL", "flags": flags, "seed": seed,   # Đã thay thế resolve_model_name
         "selected_threshold": float(threshold), "val_metrics": val_m, "test_metrics": test_m,
         "runtime": timing, "federated_metrics": fl_info, "rl_info": rl_info,
         "graph_info": {"train_edges": int(g_tr.edge_index.size(1)), "val_edges": int(g_va.edge_index.size(1)),
