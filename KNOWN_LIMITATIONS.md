@@ -73,18 +73,20 @@ Nhãn dùng trong code và tài liệu:
 
 | ID | Nội dung | Lựa chọn | Nhãn |
 |---|---|---|---|
-| R1 | Reward | `F1 + 0.25·Recall − 1.0·FPR` theo batch. Paper chỉ nói "combination of detection accuracy and false positive rate" | [INFERRED] tự thiết kế |
-| R2 | State | Mean-pooling embedding TSSGC của batch giao dịch hiện tại | [INFERRED] |
+| R1 | Reward | `F1 + 0.25·Recall − 1.0·FPR` tính trên một **cửa sổ** giao dịch (xem R13). Paper chỉ nói "combination of detection accuracy and false positive rate" và không đưa công thức | [INFERRED] tự thiết kế |
+| R2 | State | Mean-pooling embedding TSSGC của cửa sổ giao dịch hiện tại | [INFERRED] |
 | R3 | Action | (threshold ∈ \[0,1\], feature weights) | threshold [PAPER] |
 | R4 | Feature weights tác dụng lên đâu | Lên **64 chiều embedding** (trước classifier), không phải đặc trưng đầu vào (có thể hàng trăm đến nghìn chiều) | [INFERRED] |
 | R5 | Chuẩn hóa feature weights | w = D·a/Σa (trung bình = 1) | [INFERRED] |
-| R6 | Chuyển trạng thái | State kế tiếp = batch kế tiếp, không phụ thuộc action (thực chất là contextual bandit; γ gần như vô tác dụng) | [INFERRED] |
+| R6 | Chuyển trạng thái | State kế tiếp = cửa sổ kế tiếp (huấn luyện: cửa sổ ngẫu nhiên khác; suy luận: cửa sổ liền kề), **không phụ thuộc action**. Về bản chất là contextual bandit; γ = 0.99 được giữ cho đúng Eq. 12 nhưng gần như không có tác dụng | [INFERRED] |
 | R7 | Cập nhật target network | Polyak τ = 0.005. Paper chỉ nói "periodically updated" | [INFERRED] |
 | R8 | Replay buffer, γ, noise thăm dò | 10 000; γ = 0.99; noise Gaussian giảm dần | [INFERRED] |
 | R9 | RL huấn luyện trên tập nào | **Validation**; test không dùng để cập nhật policy | [INFERRED] |
-| R10 | Threshold cuối | Trung bình threshold greedy trên val (`inference: mean`), tùy chọn `per_batch` | [INFERRED] |
+| R10 | Threshold cuối | Trung bình threshold greedy khi quét hết val (`inference: mean`), tùy chọn `per_batch`. Giá trị khác (ví dụ `grid` ở bản cũ) bị **từ chối** bằng `ValueError`; bản cũ ghi nhãn `grid` trong khi thực tế chạy `mean` | [INFERRED] |
 | R11 | Online adaptation trên test (Fig. 2 có vòng feedback) | **Không cài**. Paper cũng liệt kê "online learning" là future work | [UNREPRODUCIBLE] / [DEVIATION] |
 | R12 | NAF: ma trận L | L chéo = exp(·) kẹp \[−4, 2\] để ổn định số | [INFERRED] |
+| R13 | Kích thước cửa sổ RL | `env_batch_size` là mức **tối thiểu**; code nâng lên `ceil(env_min_pos_per_batch / tỉ lệ fraud của val)` (mặc định 20 fraud/cửa sổ), tối đa 50% kích thước val. Lý do: với fraud ~0.1% và batch 512, đa số batch không có fraud, reward suy biến thành `−FPR` và policy tối ưu là "không báo gì" (F1 = 0). Tỉ lệ fraud chỉ lấy từ val, không từ test | [INFERRED] sửa lỗi thiết kế của bản trước |
+| R14 | Cấu trúc episode | Huấn luyện: mỗi episode = `steps_per_episode` (32) cửa sổ liên tục bắt đầu ở vị trí ngẫu nhiên (thử lại tối đa 20 lần để cửa sổ có ≥ 1 fraud). Suy luận: quét tuần tự, không chồng lấn, đuôi ngắn hơn nửa cửa sổ được gộp vào cửa sổ cuối. Paper không mô tả episode | [INFERRED] |
 
 ### 2.4 Federated learning
 
@@ -99,7 +101,15 @@ Nhãn dùng trong code và tài liệu:
 | F7 | Preprocessor (min/max, mode, vocabulary one-hot) | Fit **tập trung** trên toàn bộ train rồi chia cho client. Điều này không mô phỏng đúng FL thực (client không chia sẻ thống kê) | [DEVIATION] |
 | F8 | Optimizer state cục bộ | Giữ qua các round; đồng bộ cả buffer BatchNorm | [INFERRED] |
 
-### 2.5 Huấn luyện và tiền xử lý
+### 2.5 Đánh giá
+
+| ID | Nội dung | Lựa chọn | Nhãn |
+|---|---|---|---|
+| E1 | Chẩn đoán ngưỡng | Mỗi file kết quả có thêm `diagnostic_val_best_f1_threshold`: ngưỡng tối đa F1 **chọn trên val**, áp lên test. Chỉ để tách lỗi "mô hình xếp hạng kém" khỏi lỗi "ngưỡng RL sai". **Không phải kết quả của paper**; số chính thức vẫn là `test_metrics` (ngưỡng do RL chọn) | Bổ sung của repo |
+| E2 | Ngưỡng khi tắt RL ("w/o RL") | Mặc định `fixed_0.5` (cách hiểu đơn giản nhất của "không có ngưỡng thích nghi"). Tùy chọn `evaluation.threshold_when_rl_off: val_best_f1` để so sánh công bằng hơn; nếu bật sẽ ghi vào `deviations_from_paper` | [INFERRED] |
+| E3 | Metric | AUC-ROC, AUC-PR (average precision), F1, Recall@1% đúng 4 metric của paper; thêm precision/FPR/TP/FP/TN/FN để chẩn đoán | [PAPER] + bổ sung |
+
+### 2.6 Huấn luyện và tiền xử lý
 
 | ID | Nội dung | Lựa chọn | Nhãn |
 |---|---|---|---|
@@ -127,6 +137,7 @@ Nhãn dùng trong code và tài liệu:
 | BatchNorm sau mỗi lớp | Có | Có | [PAPER] |
 | Q-network | 2 × 128 | 2 × 128 | [PAPER] |
 | Optimizer / LR | Adam / 0.001 | Adam / 0.001 | [PAPER] |
+| Cấu hình RL | NAF, 2 × 128, lr 0.001 | NAF, 2 × 128, lr 0.001; cửa sổ/episode/reward xem R1, R13, R14 | Kiến trúc [PAPER]; phần còn lại [INFERRED] |
 | Batch size | 64 | xem D3 | [DEVIATION] |
 | Epoch / patience | 100 / 10 | 100 / 10 | [PAPER] |
 | Seed | 42 (Python, NumPy, PyTorch) | 42 | [PAPER] |
@@ -141,7 +152,9 @@ Nhãn dùng trong code và tài liệu:
 
 ### 4.1 PaySim
 - Paper: 6,362,620 giao dịch, 8,213 fraud (0.129%), `step` = 1 giờ. Repo dùng `step` trực tiếp làm giờ.
-- Nếu dùng `paysim_fast.csv` hoặc `sample_frac < 1`, kết quả **không phải** kết quả paper. Số dòng và số fraud được in ở log `[LOAD]` và phải được báo cáo.
+- Nếu dùng `paysim_fast.csv` hoặc `sample_frac < 1`, kết quả **không phải** kết quả paper. Số dòng và số fraud được in ở log `[LOAD]` và phải được báo cáo. Nguồn gốc/cách tạo `paysim_fast.csv` là của người dùng; repo không kiểm chứng file đó có đủ 6,362,620 dòng và 8,213 fraud hay không.
+- Đồ thị cosine chỉ trên 13 đặc trưng số (đã min-max) của PaySim nên rất dày: lần smoke test có train_edges = 8,963,102 (xem mục 9). Ngưỡng cosine 0.9 là của paper; mật độ này là hệ quả, không phải lỗi, nhưng làm GRU/GAT dễ bị trung bình hóa. `max_neighbors_per_node` (G3) chặn số láng giềng.
+- Tỉ lệ fraud khác nhau rõ giữa các đoạn thời gian của PaySim (cắt theo thời gian) nên val và test có thể lệch phân phối (mục 9).
 
 ### 4.2 Credit Card 2023
 - Paper mô tả có thời gian giao dịch và tỉ lệ fraud 0.172%. Bản Kaggle `nelgiriyewithana/credit-card-fraud-detection-dataset-2023` theo hiểu biết của người viết (**cần xác minh bằng log `[LOAD] labels=`**) không có cột thời gian và gần cân bằng 50/50.
@@ -179,6 +192,7 @@ Nhãn dùng trong code và tài liệu:
 - Không có soft edges, pruning, hybrid graph, weighted fusion, "augmented graph".
 - `python tools/check_clean_room.py` kiểm tra tự động và phải trả về mã 0 trước khi chạy thực nghiệm để báo cáo.
 - Các config `*_sample.yaml`, `test.yaml`, `smoke_test.yaml` là để chạy thử nhanh (`sample_frac < 1`, ít epoch) và **không phải kết quả paper**; checker bỏ qua chúng.
+- Có thêm `configs/*_strict.yaml` (dropout 0, không projection, không cap, `batch_mode: full`). **Chưa kiểm chứng bộ nhớ**; có thể không chạy được trên PaySim đầy đủ.
 - Mọi file kết quả có trường `deviations_from_paper` liệt kê các cap kỹ thuật đang bật (G3, T4, T7, T10, D3, D4, D9 ...).
 
 ---
@@ -189,3 +203,21 @@ Nhãn dùng trong code và tài liệu:
 2. Chạy hai cấu hình: **strict** (`dropout: 0`, `shared_projection: false`, không cap) và **practical** (có cap để vừa bộ nhớ). Báo cáo cả hai.
 3. Báo cáo kèm: số dòng dữ liệu thật, tỉ lệ fraud, số cạnh trung bình/node, phiên bản thư viện, và danh sách `deviations_from_paper`.
 4. "Khớp" ở đây nghĩa là **khớp công thức và quy trình được paper mô tả**, không có nghĩa là tái hiện được con số.
+
+---
+
+## 9. Quan sát từ lần chạy smoke test (PaySim 5%) và những gì đã sửa
+
+Nguồn: file JSON do người dùng cung cấp (`sample_frac = 0.05`, 2 round FL, 20 epoch RL). **Đây không phải kết quả paper**.
+
+**Số liệu có trong JSON:** val 50,901 mẫu với **28** fraud; test 63,627 mẫu với 215 fraud (0.338%, so với val ≈ 0.055%); ngưỡng RL = 0.592; val AUC-ROC 0.839, AUC-PR 0.0089; test AUC-ROC 0.892, AUC-PR 0.147; **TP = 0 ở cả val và test → F1 = 0**; `last_episode_reward = 0.0`; `train_edges = 8,963,102`; `inference: grid` trong config nhưng `threshold_method` chỉ là nhãn.
+
+**Diễn giải (giả thuyết nhất quán với số liệu, chưa kiểm chứng bằng chạy lại):**
+1. Với batch RL = 512 và fraud val ≈ 0.055%, kỳ vọng chỉ ~0.28 fraud/batch, nên đa số batch không có fraud. Khi đó `reward = −FPR`, và reward cuối bằng 0.0 khớp với việc policy học "không dự đoán gì". → sửa bằng R13/R14.
+2. Mô hình chỉ được huấn luyện 2 round FL nên xếp hạng còn yếu (AUC-PR val 0.0089).
+3. Val chỉ có 28 fraud nên mọi ước lượng ngưỡng trên val rất nhiễu; val và test lệch tỉ lệ fraud (≈ 6 lần).
+4. Nhãn `grid` trong config không tương ứng với cơ chế nào: ngưỡng thực chất là trung bình policy (`mean`). → từ nay giá trị không hợp lệ bị từ chối (R10).
+
+**Chưa được kiểm chứng:** người thực hiện sửa code trong môi trường không có dữ liệu thật nên **chưa chạy lại được**. Các thay đổi chỉ được kiểm tra về đường chạy code (không lỗi cú pháp, không lỗi runtime) bằng dữ liệu ngẫu nhiên trong bộ nhớ, **không** dùng để báo cáo bất kỳ kết quả nào. Chưa biết liệu F1 có hết bằng 0 hay không cho tới khi bạn chạy lại bằng dữ liệu đầy đủ.
+
+**Việc cần làm khi chạy lại:** dùng `configs/paysim.yaml` (không sample), đọc dòng `[RL] fraud/cửa sổ trung bình=...` (phải ≫ 1 và tỉ lệ cửa sổ không có fraud ≈ 0%), rồi so `test_metrics` (ngưỡng RL) với `diagnostic_val_best_f1_threshold`. Nếu AUC cao mà F1 vẫn thấp ở ngưỡng RL, lỗi nằm ở RL; nếu cả hai đều thấp, lỗi nằm ở mô hình/đồ thị/huấn luyện.

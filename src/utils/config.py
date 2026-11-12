@@ -8,7 +8,7 @@ from typing import Any, Dict
 import yaml
 
 DEFAULT_FLAGS: Dict[str, bool] = {
-    # --- Thành phần của PAPER (dùng cho ablation: w/o GNN, w/o RL, w/o FL) ---
+    # --- Chỉ các cờ của PAPER (ablation Section V-B-2: w/o GNN, w/o RL, w/o FL) ---
     "gnn": True,
     "rl": True,
     "federated": True,

@@ -8,7 +8,7 @@
 #   Mapping đọc từ config (dataset.entity_type_col / entity_type_values) và CỐ ĐỊNH
 #   giữa train/val/test (bản cũ dùng cat.codes theo từng split nên lệch mã).
 #
-# flags: gnn=False -> Data không cạnh (dùng cho "w/o GNN");
+# flags: gnn=False -> Data không cạnh (dùng cho "w/o GNN").
 # ============================================================
 from __future__ import annotations
 
@@ -60,10 +60,10 @@ def build_transaction_graph(
     delta = torch.empty(0)
 
     if flags["gnn"]:
-            print(f"[GRAPH] Hard edges: N={n}, d={x.shape[1]}, cos>={thr}, window={win if hours is not None else 'n/a'}h, cap={cap}")
-            ei, dl, _ = cosine_neighbors(x, hours, thr, win, cap, causal=False, device=dev,
-                                         chunk_elems=float(g.get("chunk_elems", 2e7)))
-            edge_index, delta = make_undirected(ei, dl, n)
+        print(f"[GRAPH] Edges: N={n}, d={x.shape[1]}, cos>={thr}, window={win if hours is not None else 'n/a'}h, cap={cap}")
+        ei, dl, _ = cosine_neighbors(x, hours, thr, win, cap, causal=False, device=dev,
+                                     chunk_elems=float(g.get("chunk_elems", 2e7)))
+        edge_index, delta = make_undirected(ei, dl, n)
 
     node_type = (torch.tensor(entity_type, dtype=torch.long) if entity_type is not None
                  else torch.zeros(n, dtype=torch.long))

@@ -1,0 +1,95 @@
+# ============================================================
+# paysim — STRICT: không có thành phần kỹ thuật ngoài paper.
+# dropout=0, shared_projection=false, không cap cạnh, không cap GRU, huấn luyện/suy luận trên toàn đồ thị.
+# [CHƯA KIỂM CHỨNG BỘ NHỚ]: không cap có thể hết RAM/VRAM trên dataset lớn; nếu vậy hãy dùng cấu hình practical
+# (paysim.yaml) và báo cáo các deviation. Chạy cả hai và báo cáo cả hai.
+# ============================================================
+seed: 42
+flags:
+  gnn: true
+  rl: true
+  federated: true
+experiment:
+  name: paysim_strict
+  dataset: paysim
+  pipeline: fraudgnn_rl
+runtime:
+  device: auto
+output:
+  dir: outputs
+graph:
+  time_window_hours: 1.0
+  similarity_threshold: 0.9
+  max_neighbors_per_node: null
+  device: null
+  chunk_elems: 20000000.0
+model:
+  hidden_dim: 64
+  num_layers: 3
+  dropout: 0.0
+  shared_projection: false
+  temporal_max_seq_len: null
+train:
+  epochs: 100
+  patience: 10
+  batch_size: 64
+  learning_rate: 0.001
+  weight_decay: 0.0
+  pos_weight_max: 100.0
+  batch_mode: full
+  subgraph_nodes: 50000
+  grad_steps_per_epoch: 1
+  eval_chunk_nodes: null
+rl:
+  type: naf
+  hidden_dim: 128
+  learning_rate: 0.001
+  epochs: 100
+  env_batch_size: 2048   # [INFERRED] cỡ cửa sổ TỐI THIỂU; code nâng lên để mỗi cửa sổ có >= env_min_pos_per_batch fraud
+  env_min_pos_per_batch: 20
+  steps_per_episode: 32
+  update_batch_size: 64
+  gamma: 0.99
+  tau: 0.005
+  buffer_size: 10000
+  fpr_penalty: 1.0
+  recall_weight: 0.25
+  inference: mean
+  n_threshold_bins: 19
+federated:
+  num_clients: 3
+  rounds: 50
+  local_epochs: 2
+  client_fraction: 1.0
+  learning_rate: 0.001
+  patience: 10
+dataset:
+  name: PaySim
+  path: data/raw/paysim_fast.csv
+  label_col: isFraud
+  time_col: step
+  time_unit: hour
+  sample_frac: null
+  random_state: 42
+  entity_type_col: type
+  entity_type_values:
+  - CASH_IN
+  - CASH_OUT
+  - DEBIT
+  - PAYMENT
+  - TRANSFER
+split:
+  strategy: temporal
+  train_ratio: 0.64
+  val_ratio: 0.16
+preprocess:
+  numeric_strategy: mean
+  categorical_strategy: most_frequent
+  drop_cols:
+  - isFlaggedFraud
+  - nameOrig
+  - nameDest
+  categorical_cols:
+  - type
+evaluation:
+  threshold_when_rl_off: fixed_0.5   # [INFERRED] "w/o RL": fixed_0.5 | val_best_f1

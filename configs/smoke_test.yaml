@@ -1,5 +1,5 @@
 # ============================================================
-# SMOKE TEST BASELINE (PaySim 5%) — FraudGNN-RL gốc
+# SMOKE TEST (PaySim 5%) — chỉ để kiểm tra luồng chạy, KHÔNG phải kết quả paper
 # ============================================================
 seed: 42
 flags:
@@ -7,7 +7,7 @@ flags:
   rl: true
   federated: true
 experiment:
-  name: smoke_test_baseline
+  name: smoke_test
   dataset: paysim
   pipeline: fraudgnn_rl
 runtime:
@@ -27,12 +27,12 @@ model:
   shared_projection: true
   temporal_max_seq_len: 32
 train:
-  epochs: 20                # ← Tăng từ 10 lên 20
+  epochs: 20
   patience: 3
   batch_size: 64
   learning_rate: 0.001
   weight_decay: 0.0
-  pos_weight_max: 1000.0    # ← Giảm từ 2000 xuống 1000
+  pos_weight_max: 100.0
   batch_mode: subgraph
   subgraph_nodes: 2000
   grad_steps_per_epoch: 1
@@ -42,23 +42,24 @@ rl:
   hidden_dim: 128
   learning_rate: 0.001
   epochs: 20
-  env_batch_size: 512
+  env_batch_size: 512   # [INFERRED] cỡ cửa sổ TỐI THIỂU; code nâng lên để mỗi cửa sổ có >= env_min_pos_per_batch fraud
+  env_min_pos_per_batch: 20
+  steps_per_episode: 32
   update_batch_size: 64
   gamma: 0.99
   tau: 0.005
   buffer_size: 10000
   fpr_penalty: 1.0
   recall_weight: 0.25
-  inference: grid
+  inference: mean
   n_threshold_bins: 19
 federated:
   num_clients: 3
-  rounds: 2
+  rounds: 5
   local_epochs: 1
   client_fraction: 1.0
   learning_rate: 0.001
   patience: 3
-  enabled: false
 dataset:
   name: PaySim
   path: data/raw/paysim_fast.csv
@@ -87,3 +88,5 @@ preprocess:
   - nameDest
   categorical_cols:
   - type
+evaluation:
+  threshold_when_rl_off: fixed_0.5   # [INFERRED] "w/o RL": fixed_0.5 | val_best_f1

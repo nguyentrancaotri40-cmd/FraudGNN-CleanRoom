@@ -1,4 +1,4 @@
-# main.py — entry point gốc:  python main.py --config configs/paysim.yaml [--cv] [--seed 42]
+# main.py — entry point:  python main.py --config configs/paysim.yaml [--cv] [--seed 42]
 import sys
 
 for s in (sys.stdout, sys.stderr):

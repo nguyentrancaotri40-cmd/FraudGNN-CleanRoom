@@ -98,7 +98,6 @@ def train_federated(train_data, val_data, cfg: Dict[str, Any], device: str, timi
         states = [c.local_update(g_state, worker, local_epochs, lr) for c in chosen]
         g_state = fedavg_uniform(states)
         global_model.load_state_dict(g_state)
-        g_state = copy.deepcopy(global_model.state_dict())
         s, y = predict_scores(global_model, val_data, device, chunk_nodes=eval_chunk)
         m = classification_metrics(y, s, 0.5)
         round_times.append(time.perf_counter() - rt0)
@@ -120,5 +119,6 @@ def train_federated(train_data, val_data, cfg: Dict[str, Any], device: str, timi
     return {"model": global_model, "history": hist, "best_val_auc_pr": best, "total_time_sec": total,
             "avg_round_time_sec": float(np.mean(round_times)) if round_times else 0.0,
             "num_clients": len(clients), "num_rounds": len(hist)}
+
 
 __all__ = ["fedavg_uniform", "FederatedClient", "create_federated_clients", "train_federated"]

@@ -82,7 +82,6 @@ def train_tssgc_classifier(train_data, val_data, cfg: Dict[str, Any], device: st
     epochs, patience = int(t.get("epochs", 100)), int(t.get("patience", 10))
     eval_chunk = t.get("eval_chunk_nodes")
 
-
     best_state, best, bad, hist = None, -1.0, 0, []
     t0 = time.perf_counter()
     for epoch in range(1, epochs + 1):

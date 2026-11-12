@@ -44,7 +44,9 @@ rl:
   hidden_dim: 128
   learning_rate: 0.001
   epochs: 5
-  env_batch_size: 2048
+  env_batch_size: 2048   # [INFERRED] cỡ cửa sổ TỐI THIỂU; code nâng lên để mỗi cửa sổ có >= env_min_pos_per_batch fraud
+  env_min_pos_per_batch: 20
+  steps_per_episode: 32
   update_batch_size: 64
   gamma: 0.99
   tau: 0.005
@@ -60,16 +62,6 @@ federated:
   client_fraction: 1.0
   learning_rate: 0.001
   patience: 3
-  enabled: true
-  similarity_threshold: 0.85
-  max_neighbors_per_node: 5
-  time_window_hours: 1.0
-  causal: true
-  feature_indices: null
-  start_epoch: 5
-  end_epoch: 25
-  initial_amount: 0.1
-  final_amount: 0.3
 dataset:
   name: PaySim
   path: data/raw/paysim_fast.csv
@@ -98,3 +90,5 @@ preprocess:
   - nameDest
   categorical_cols:
   - type
+evaluation:
+  threshold_when_rl_off: fixed_0.5   # [INFERRED] "w/o RL": fixed_0.5 | val_best_f1

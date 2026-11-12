@@ -71,8 +71,6 @@ class _AE(nn.Module):
 
     def forward(self, x):
         return self.dec(self.enc(x))
-
-
 def run_deepae(X, y, device="cpu", epochs=30, **kw):
     torch.manual_seed(kw.get("seed", 42))
     xt = torch.tensor(X[0][y[0] == 0], dtype=torch.float32)
